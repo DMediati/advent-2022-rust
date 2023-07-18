@@ -1,4 +1,4 @@
-use std::{env, collections::HashMap};
+use std::{env, collections::HashMap, io};
 
 
 fn median_and_mode(mut input: Vec<i32>) -> (f32, Vec<i32>) {
@@ -66,7 +66,83 @@ fn pig_latin(input: &str) -> String {
 
 fn run_type_interface() {
     println!("Welcome to the Rust Employee Typing Interface!");
+    let mut database: HashMap<String, Vec<String>> = HashMap::new();
 
+    fn add(words: &[&str], database: &mut HashMap<String, Vec<String>>) {
+        match *words {
+            [name, "TO", department] => {
+                database.entry(department.to_string())
+                    .and_modify(|dep| dep.push(name.to_string()))
+                    .or_insert(vec![name.to_string()]);
+            },
+            _ => {
+                println!("ADD used incorrectly. Format expected: \"ADD name TO department\"");
+            }
+        }    
+    }
+
+    fn remove(words: &[&str], database: &mut HashMap<String, Vec<String>>) {
+        match *words {
+            [name, "FROM", department] => {
+                if !database.contains_key(department) {
+                    println!("{department} does not exist.");
+                    return;
+                }
+
+                database.entry(department.to_string())
+                    .and_modify(|dep| {
+                        for (i, ele) in dep.iter().enumerate() {
+                            if ele == name {
+                                dep.remove(i);
+                                return;
+                            }
+                        }
+                        println!("{name} does not exist in {department}.");
+                    });
+            },
+            _ => {
+                println!("REMOVE used incorrectly. Format expected: \"REMOVE name FROM department\"");
+            }
+        } 
+    }
+
+    fn list(words: &[&str], database: &mut HashMap<String, Vec<String>>) {
+        match *words {
+            ["ALL"] => {
+                for (dep, names) in database.iter() {
+                    println!("{}: {:?}", dep, names);
+                }
+            },
+            [department] => {
+                match database.get(department) {
+                    Some(dep) => println!("{}: {:?}", department, dep),
+                    None => println!("{department} does not exist."),
+                }
+            },
+            _ => {
+                println!("LIST used inccorectly. Format expected: \"LIST department/ALL\"");
+            }
+        }
+    }
+
+    loop {
+        println!("Enter Command: ");
+        let mut buf = String::new();
+        let _ = io::stdin().read_line(&mut buf);
+        let buf = buf.to_uppercase();
+        let mut words = buf.split_whitespace();
+        
+        match words.next() {
+            Some("ADD") => add(&words.collect::<Vec<_>>()[..], &mut database),
+            Some("REMOVE") => remove(&words.collect::<Vec<_>>()[..], &mut database),
+            Some("LIST") => list(&words.collect::<Vec<_>>()[..], &mut database),
+            Some("QUIT") => { return; },
+            _ => {
+                println!("Invalid Command. Please try again. (ADD, REMOVE, LIST, QUIT)");
+                continue;
+            },
+        };
+    }    
 }
 
 
